@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "public-api"
+version = "0.1.0"
+description = ""
+authors = ["Snir Bachar <snir@quantum-machines.co>"]
+readme = "README.md"
+include = ["public_api", "gen"]
+
+[tool.poetry.scripts]
+start-server = "public_api.server:start_server"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+betterproto = { version="2.0.0-beta6", extras=["compiler"] }
+jinja2 = "^3.1.4"
+grpcio-tools = "^1.64.1"
+simulation-api = {path = "../simulation-api/client"}
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.4.2"
+mypy = "^1.10.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

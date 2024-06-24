@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "simulation-api"
+version = "0.1.0"
+description = ""
+authors = ["Snir Bachar <snir@quantum-machines.co>"]
+readme = "README.md"
+include = ["simulation_spi"]
+
+
+[tool.poetry.dependencies]
+python = "^3.9"
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.4.2"
+mypy = "^1.10.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

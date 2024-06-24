@@ -1,0 +1,54 @@
+syntax = "proto3";
+package vopy.server;
+import "vopy/common.proto";
+service Main {
+  rpc GetStatus(Empty) returns (Status) {
+  }
+  rpc CreateSession(Empty) returns (SessionId) {
+  }
+  rpc SendConfig(SendConfigRequest) returns (Empty) {
+  }
+  rpc StartSim(SessionId) returns (Empty) {
+  }
+}
+
+message Status {
+  uint64 openSimulations = 1;
+  uint64 runningSimulations = 2;
+  uint64 failedSimulations = 3;
+}
+
+message SessionId {
+  uint64 value = 1;
+}
+
+enum NormalDeviceType {
+  CNC = 0;
+  SP = 1;
+}
+
+enum FemDeviceTypeEnum {
+  MW = 0;
+  LF = 1;
+}
+
+message FemDeviceType {
+  FemDeviceTypeEnum femDeviceTypeEnum = 1;
+  uint32 femId = 2;
+}
+
+message FemDeviceOrNone {
+  oneof device {
+    FemDeviceType femDeviceType = 1;
+    Empty none = 2;
+  }
+}
+
+message SendConfigRequest {
+  SessionId sessionId = 1;
+  map<int32, FemDeviceOrNone> fems = 2;
+  string cncGitHash = 3;
+  string spGitHash = 4;
+  string mwGitHash = 5;
+  string lfGitHash = 6;
+}

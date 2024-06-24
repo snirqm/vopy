@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+package vopy;
+
+message Empty {}
+
+
+
+message Status {
+  uint64 open_simulations = 1;
+  uint64 running_simulations = 2;
+  uint64 failed_simulations = 3;
+}
+
+message Session {
+  uint64 value = 1;
+}
+
+enum DeviceType {
+  DEVICE_TYPE_UNSPECIFIED = 0;
+  DEVICE_TYPE_CNC = 1;
+  DEVICE_TYPE_SP = 2;
+}
+
+enum FemType {
+  FEM_TYPE_UNSPECIFIED = 0;
+  FEM_TYPE_MW = 1;
+  FEM_TYPE_LF = 2;
+}
+
+message FemDevice {
+  FemType fem_type = 1;
+  uint32 id = 2;
+}
+
+message FemDeviceOrNone {
+  oneof device {
+    FemDevice fem_device = 1;
+    Empty none = 2;
+  }
+}
+
+message Config {
+  Session session = 1;
+  map<int32, FemDeviceOrNone> fems = 2;
+  string cnc_git_hash = 3;
+  string sp_git_hash = 4;
+  string mw_git_hash = 5;
+  string lf_git_hash = 6;
+}
+
+message SimulationInfo {
+  Session session = 1;
+  uint64 port = 2;
+}
+
+service PublicApi {
+  rpc GetStatus(Empty) returns (Status);
+  rpc CreateSession(Empty) returns (Session);
+  rpc SendConfig(Config) returns (Empty);
+  rpc StartSim(Session) returns (SimulationInfo);
+}

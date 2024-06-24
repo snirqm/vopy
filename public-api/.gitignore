@@ -1,0 +1,10 @@
+.gradle
+.idea
+*.iml
+**/build
+**/out
+*.log
+gen
+**/proto/build
+poetry.lock
+dist/*

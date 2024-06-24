@@ -1,0 +1,102 @@
+syntax = "proto3";
+package vopy.server;
+
+import "vopy/common.proto";
+
+service Session {
+    rpc SendConfig(SendConfigRequest) returns (Empty) {
+    }
+    rpc StartSim(Empty) returns (Empty) {
+    }
+    rpc SendOperation(SendOperationRequest) returns (SendOperationResponse) {
+    }
+}
+
+enum NormalDeviceType {
+    CNC = 0;
+    SP = 1;
+}
+
+enum FemDeviceTypeEnum {
+    MW = 0;
+    LF = 1;
+}
+
+message FemDeviceType {
+    FemDeviceTypeEnum femDeviceTypeEnum = 1;
+    uint32 femId = 2;
+}
+message DeviceType {
+    oneof deviceType {
+        NormalDeviceType normalDeviceType = 1;
+        FemDeviceType femDeviceType = 2;
+    }
+}
+
+message FemDeviceOrNone {
+    oneof device {
+        FemDeviceType femDeviceType = 1;
+        Empty none = 2;
+    }
+}
+
+message SendConfigRequest {
+    map<int32, FemDeviceOrNone> fems = 2;
+    string cncGitHash = 3;
+    string spGitHash = 4;
+    string mwGitHash = 5;
+    string lfGitHash = 6;
+}
+
+
+message WriteRequest {
+    uint64 address = 1;
+    uint32 data = 2;
+    DeviceType type = 3;
+}
+
+message WriteBatchRequest {
+    uint64 address = 1;
+    repeated uint32 data = 2;
+    DeviceType type = 3;
+}
+message ReadRequest {
+    uint64 address = 1;
+    DeviceType type = 2;
+}
+message SimClockRequest {
+    uint64 time = 1;
+}
+message SimToLastRequest {}
+message TerminateRequest {}
+
+message WriteResponse {}
+message ReadResponse {}
+message SimClockResponse {}
+message SimToLastResponse {}
+message TerminateResponse {}
+
+
+
+
+message SendOperationRequest {
+    oneof operation {
+        WriteRequest writeRequest = 2;
+        WriteBatchRequest writeBatchRequest = 3;
+        ReadRequest readRequest = 4;
+        SimClockRequest simClockRequest = 5;
+        SimToLastRequest simToLastRequest = 6;
+        TerminateRequest terminateRequest = 7;
+    }
+}
+
+message SendOperationResponse {
+    oneof operation {
+        WriteResponse writeResponse = 10;
+        ReadResponse readResponse = 11;
+        SimClockResponse simClockResponse = 12;
+        SimToLastResponse simToLastResponse = 13;
+        TerminateResponse terminateResponse = 14;
+    }
+}
+

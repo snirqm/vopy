@@ -1,3 +1,7 @@
 **/build
 **/dist/*
 **/poetry.lock
+**/pyproject.toml
+**/.idea
+**/.DS_Store
+**/__pycache__

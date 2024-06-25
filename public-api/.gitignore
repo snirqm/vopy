@@ -8,3 +8,5 @@ gen
 **/proto/build
 poetry.lock
 dist/*
+**/.DS_Store
+**/__pycache__

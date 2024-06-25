@@ -9,3 +9,6 @@ add_subdirectory(commands)
 add_subdirectory(proto)
 add_subdirectory(client)
 add_subdirectory(server)
+
+# create a target to build server and client
+add_custom_target(simulation-api DEPENDS simulation-api-server simulation-api-client)

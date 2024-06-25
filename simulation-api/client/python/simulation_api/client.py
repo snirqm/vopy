@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from simulation_api.command import Command, CommandResponse
+from python.simulation_api.command import Command, CommandResponse
 class SimulationApiClient:
     def __init__(self, host, port):
         self.reader: asyncio.StreamReader | None = None

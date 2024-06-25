@@ -32,3 +32,5 @@ cmake-*
 *.exe
 *.out
 *.app
+
+.idea

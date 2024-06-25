@@ -8,3 +8,4 @@ gen
 **/proto/build
 poetry.lock
 dist/*
+protoc.exe

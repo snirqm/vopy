@@ -13,7 +13,7 @@ message Status {
 }
 
 message Session {
-  uint64 value = 1;
+  uint64 key = 1;
 }
 
 enum DeviceType {

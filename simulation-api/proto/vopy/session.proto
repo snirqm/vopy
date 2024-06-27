@@ -1,14 +1,10 @@
 syntax = "proto3";
 package vopy.server;
 
-import "vopy/common.proto";
+message Empty {}
 
 service Session {
-    rpc SendConfig(SendConfigRequest) returns (Empty) {
-    }
-    rpc StartSim(Empty) returns (Empty) {
-    }
-    rpc SendOperation(SendOperationRequest) returns (SendOperationResponse) {
+    rpc SendOperation(stream SendOperationRequest) returns (stream SendOperationResponse) {
     }
 }
 
@@ -40,24 +36,16 @@ message FemDeviceOrNone {
     }
 }
 
-message SendConfigRequest {
-    map<int32, FemDeviceOrNone> fems = 2;
-    string cncGitHash = 3;
-    string spGitHash = 4;
-    string mwGitHash = 5;
-    string lfGitHash = 6;
-}
-
 
 message WriteRequest {
     uint64 address = 1;
-    uint32 data = 2;
+    bytes data = 2;
     DeviceType type = 3;
 }
 
 message WriteBatchRequest {
     uint64 address = 1;
-    repeated uint32 data = 2;
+    bytes data = 2;
     DeviceType type = 3;
 }
 message ReadRequest {
@@ -71,7 +59,9 @@ message SimToLastRequest {}
 message TerminateRequest {}
 
 message WriteResponse {}
-message ReadResponse {}
+message ReadResponse {
+    bytes data = 1;
+}
 message SimClockResponse {}
 message SimToLastResponse {}
 message TerminateResponse {}
@@ -82,11 +72,10 @@ message TerminateResponse {}
 message SendOperationRequest {
     oneof operation {
         WriteRequest writeRequest = 2;
-        WriteBatchRequest writeBatchRequest = 3;
-        ReadRequest readRequest = 4;
-        SimClockRequest simClockRequest = 5;
-        SimToLastRequest simToLastRequest = 6;
-        TerminateRequest terminateRequest = 7;
+        ReadRequest readRequest = 3;
+        SimClockRequest simClockRequest = 4;
+        SimToLastRequest simToLastRequest = 5;
+        TerminateRequest terminateRequest = 6;
     }
 }
 

@@ -1,54 +1,58 @@
-#include "app.hpp"
+#include "app.h"
+#include "easylogging++.h"
+
 #include <print>
 
-#define FILE_MODE_CMD "file"
-#define FILE_MODE_IN_FLAG "-i"
-#define FILE_MODE_OUT_FLAG "-o"
+#define PORT_FLAG "-p"
+#define HOST_FLAG "-i"
 
-#define TCP_MODE_CMD "tcp"
-#define TCP_MODE_PORT_FLAG "-p"
-
-int VOpyConfig::parse(int argc, char **argv) {
+VOpyClientConfig::VOpyClientConfig(int argc, char **argv) {
     argv = app.ensure_utf8(argv);
-    auto fifo_server = app.add_subcommand(FILE_MODE_CMD, "fifo file server mode");
-    fifo_server->add_option(FILE_MODE_IN_FLAG, "Input FIFO file name");
-    fifo_server->add_option(FILE_MODE_OUT_FLAG, "Output FIFO file name");
+    app.add_option(HOST_FLAG, host, "Server host");
+    app.add_option(PORT_FLAG, port, "Server port");
+    parse(argc, argv);
+}
 
-    auto tcp_server = app.add_subcommand(TCP_MODE_CMD, "TCP server mode");
-    tcp_server->add_option(TCP_MODE_PORT_FLAG, "Server port");
+int VOpyClientConfig::parse(int argc, char **argv) {
     CLI11_PARSE(app, argc, argv)
+    LOG(INFO) << "Host: " << host;
+    LOG(INFO) << "Port: " << port;
+    endpoint = boost::asio::ip::tcp::endpoint(boost::asio::ip::address::from_string(host), port);
     return 0;
 }
 
-[[nodiscard]] VOpyMode VOpyConfig::mode() const {
-    if (app.get_subcommand("file")->parsed()) {
-        return VOpyMode::FIFO;
-    } else if (app.get_subcommand("tcp")->parsed()) {
-        return VOpyMode::TCP;
-    } else {
-        throw std::runtime_error("Invalid mode");
-    }
-}
 
-VOpyClientApp::VOpyClientApp(int argc, char **argv) : config(std::make_unique<VOpyConfig>()), client() {
-    config->parse(argc, argv);
-    switch (config->mode()) {
-        case VOpyMode::FIFO: {
-            auto sub_command = config->app.get_subcommand(FILE_MODE_CMD);
-            client = std::make_unique<FileSimulationClient>(
-                    sub_command->get_option(FILE_MODE_IN_FLAG)->as<std::string>(),
-                    sub_command->get_option(FILE_MODE_OUT_FLAG)->as<std::string>());
-            break;
-        }
-        case VOpyMode::TCP: {
-            auto sub_command = config->app.get_subcommand(TCP_MODE_CMD);
-            client = std::make_unique<TcpSimulationClient>(sub_command->get_option(TCP_MODE_PORT_FLAG)->as<int>());
-            break;
-        }
-    }
+VOpyClientApp::VOpyClientApp(int argc, char **argv) {
+    config = std::make_unique<VOpyClientConfig>(argc, argv);
+    client = std::make_unique<VOpyTcpClient>(config->endpoint);
 }
 
 int VOpyClientApp::run() {
+    int count = 0;
     client->connect();
+    while (true) {
+        std::string cmd_str;
+        std::getline(std::cin, cmd_str);
+        LOG(INFO) << "Sending command: " << cmd_str;
+        if (cmd_str == "exit") {
+            break;
+        }
+        auto cmd = cmd_from_string(cmd_str.c_str());
+        client->send_command(cmd);
+        auto result = client->receive_result();
+        if (result.empty) {
+            LOG(INFO) << "Empty result";
+        } else if (result.ok) {
+            LOG(INFO) << "OK result";
+        } else {
+            switch (result.type) {
+                case READ:
+                    LOG(INFO) << "Read result: " << result.result.read.value;
+                    break;
+                default:
+                    LOG(INFO) << "Unknown result";
+            }
+        }
+    }
     return 0;
 }

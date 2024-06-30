@@ -1,5 +1,4 @@
 
-set(CMAKE_CXX_STANDARD 14)
 add_library(cli++ INTERFACE cli.h)
 target_include_directories(cli++
         INTERFACE

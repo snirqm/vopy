@@ -9,7 +9,7 @@ struct VOpyClientConfig {
     std::string host = "";
     VOpyClientConfig(int argc, char **argv);
     int parse(int argc, char **argv);
-    CLI::App app = CLI::App{"VOPY SIMULATION SERVER"};
+    CLI::App app{"VOPY SIMULATION SERVER"};
     boost::asio::ip::tcp::endpoint endpoint;
 };
 

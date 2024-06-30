@@ -1,0 +1,4 @@
+#!/bin/bash
+export LD_LIBRARY_PATH=@CMAKE_BINARY_DIR@/server:@Boost_LIBRARY_DIRS@
+source /tools/snps/vcs/current/gnu/linux/source_me.sh
+./simv $@

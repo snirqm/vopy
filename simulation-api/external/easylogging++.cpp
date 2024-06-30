@@ -2877,7 +2877,7 @@ static void logCrashReason(int sig, bool stackTraceIfAvailable, Level level, con
 #else
   ELPP_UNUSED(stackTraceIfAvailable);
 #endif  // ELPP_STACKTRACE
-  ELPP_WRITE_LOG(el::base::Writer, level, base::DispatchAction::NormalLog, logger) << ss.str();
+  ELPP_WRITE_std::cout << "el::base::Writer, level, base::DispatchAction::NormalLog, logger:" << ss.str() << std::endl;
 }
 
 static inline void crashAbort(int sig) {

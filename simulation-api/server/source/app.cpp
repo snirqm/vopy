@@ -1,33 +1,34 @@
 #include "app.h"
-#include <print>
 
-#define PORT_FLAG "-p"
+#define PORT_FLAG "-p,--port"
+
+#define SIM_PATH_FLAG "-s,--sim-path"
+
+
+// namespace utils {
+//     template<typename T, typename... Args>
+//     std::unique_ptr<T> make_unique(Args&&... args) {
+//         return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+//     }
+// }
 
 VOpyServerConfig::VOpyServerConfig(int argc, char **argv) {
     argv = app.ensure_utf8(argv);
-    app.add_option(PORT_FLAG, port, "Server port");
-    parse(argc, argv);
+    app.add_option(PORT_FLAG, port, "Server port")->required();
+    app.add_option(SIM_PATH_FLAG, sim_path, "Path to simulation running directory, default is current directory")->capture_default_str();
+    if(parse(argc, argv) != 0) {
+        throw std::runtime_error("Failed to parse arguments");
+    }
 }
 
 int VOpyServerConfig::parse(int argc, char **argv) {
-    CLI11_PARSE(app, argc, argv)
-    LOG(INFO) << "Port: " << port;
+    CLI11_PARSE(app, argc, argv)   
     return 0;
-}
-
-[[nodiscard]] VOpyMode VOpyServerConfig::mode() const {
-    if (app.get_subcommand("file")->parsed()) {
-        return VOpyMode::FIFO;
-    } else if (app.get_subcommand("tcp")->parsed()) {
-        return VOpyMode::TCP;
-    } else {
-        throw std::runtime_error("Invalid mode");
-    }
 }
 
 VOpyServerApp::VOpyServerApp(int argc, char **argv) {
     config = std::make_unique<VOpyServerConfig>(argc, argv);
-    server = std::make_unique<TcpSimulationServer>(config->port);
+    server = std::make_unique<TcpSimulationServer>(config->port, config->sim_path);
 }
 
 int VOpyServerApp::run() {

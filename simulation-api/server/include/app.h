@@ -2,18 +2,14 @@
 
 #include "cli.h"
 #include "server.h"
-
-enum class VOpyMode {
-    FIFO,
-    TCP
-};
+#include "easylogging++.h"
 
 struct VOpyServerConfig {
-    CLI::App app = CLI::App{"VOPY SIMULATION SERVER"};
+    CLI::App app{"VOPY SIMULATION SERVER"};
     int port = -1;
+    std::string sim_path = ".";
     VOpyServerConfig(int argc, char **argv);
     int parse(int argc, char **argv);
-    [[nodiscard]] VOpyMode mode() const;
 };
 
 class VOpyServerApp : CLI::App {

@@ -15,36 +15,41 @@ void VOpyTcpClient::disconnect() {
     socket.close();
 }
 
-void VOpyTcpClient::send_command(const VOpyCommand &cmd) {
+void VOpyTcpClient::send_command(const VOpyCommand &cmd, char *buffer) {
     void *cmd_buf = (void *) &cmd;
     int bytes_written = 0;
     while (bytes_written < sizeof(struct VOpyCommand)) {
         bytes_written += boost::asio::write(socket, boost::asio::buffer(cmd_buf + bytes_written, sizeof(struct VOpyCommand) - bytes_written));
     }
-    if (cmd.type == BIG_WRITE) {
-        bytes_written = 0;
-        while (bytes_written < cmd.big_write.num_of_bytes) {
-            bytes_written += boost::asio::write(socket, boost::asio::buffer(cmd.big_write.data + bytes_written, cmd.big_write.num_of_bytes - bytes_written));
-        }
-        free(cmd.big_write.data);
+    if (cmd.type == WRITE) {
+        send_data(buffer, cmd.write.num_of_bytes);
     }
 }
 
-VOpyCommandResult VOpyTcpClient::receive_result() {
+VOpyCommandResult VOpyTcpClient::receive_result(char *buffer) {
     VOpyCommandResult result;
     void *result_buf = (void *) &result;
     int bytes_read = 0;
     while (bytes_read < sizeof(struct VOpyCommandResult)) {
         bytes_read += boost::asio::read(socket, boost::asio::buffer(result_buf + bytes_read, sizeof(struct VOpyCommandResult) - bytes_read));
     }
-    if (result.type == BIG_READ) {
-        uint32_t * data_buf = (uint32_t *) malloc(result.memory.big_read.num_of_bytes);
-        bytes_read = 0;
-        while (bytes_read < result.memory.big_read.num_of_bytes) {
-            bytes_read += boost::asio::read(socket, boost::asio::buffer(data_buf + bytes_read, result.memory.big_read.num_of_bytes - bytes_read));
-        }
-        result.memory.big_read.data = data_buf;
+    if (result.type == READ) {
+        receive_data(buffer, result.data_size);
     }
     return result;
 }
 
+
+void VOpyTcpClient::send_data(const void *data, uint32_t num_of_bytes) {
+    int bytes_written = 0;
+    while (bytes_written < num_of_bytes) {
+        bytes_written += boost::asio::write(socket, boost::asio::buffer(data + bytes_written, num_of_bytes - bytes_written));
+    }
+}
+
+void VOpyTcpClient::receive_data(void *data, uint32_t num_of_bytes) {
+    int bytes_read = 0;
+    while (bytes_read < num_of_bytes) {
+        bytes_read += boost::asio::read(socket, boost::asio::buffer(data + bytes_read, num_of_bytes - bytes_read));
+    }
+}

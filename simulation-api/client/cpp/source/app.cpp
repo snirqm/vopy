@@ -2,8 +2,13 @@
 #include "easylogging++.h"
 #include <memory>
 
+#define BUFFER_SIZE 1024
 #define PORT_FLAG "-p"
 #define HOST_FLAG "-i"
+
+namespace po = boost::program_options;
+
+char buffer[BUFFER_SIZE];
 
 VOpyClientConfig::VOpyClientConfig(int argc, char **argv)
 {
@@ -22,22 +27,21 @@ int VOpyClientConfig::parse(int argc, char **argv)
     return 0;
 }
 
-VOpyClientApp::VOpyClientApp(int argc, char **argv)
+VOpyClientApp::VOpyClientApp(int argc, char **argv) 
 {
     config = std::make_unique<VOpyClientConfig>(argc, argv);
     client = std::make_unique<VOpyTcpClient>(config->endpoint);
 }
 
-void help()
+void print_help()
 {
-    std::cout << "Commands: " << std::endl;
-    std::cout << "read <address>" << std::endl;
-    std::cout << "write <address> <value>" << std::endl;
-    std::cout << "big_read <address> <num_of_bytes>" << std::endl;
-    std::cout << "big_write <address> <num_of_bytes> <bytes[0]> <bytes[1]> ... <bytes[num_of_bytes - 1]>" << std::endl;
-    std::cout << "sim_clock <cycles>" << std::endl;
-    std::cout << "sim_to_last" << std::endl;
-    std::cout << "exit" << std::endl;
+    std::cout << "List of commands:" << std::endl;
+    std::cout << "  read <address> <num_of_bytes>" << std::endl;
+    std::cout << "  write <address> <num_of_bytes> <bytes[0]> <bytes[1]> ... <bytes[num_of_bytes - 1]>" << std::endl;
+    std::cout << "  sim_clock <cycles>" << std::endl;
+    std::cout << "  sim_to_last" << std::endl;
+    std::cout << "  exit" << std::endl;
+    std::cout << std::flush;
 }
 
 uint64_t parse_address(const std::string address)
@@ -50,194 +54,138 @@ uint32_t parse_data(const std::string data)
     return std::stoul(data, nullptr, 0);
 }
 
-static VOpyCommand read_command_from_stdin()
+uint8_t parse_byte(const std::string byte)
 {
-    // get a line from stdin
+    return std::stoul(byte, nullptr, 16);
+}
+
+void process_result(VOpyCommand command, VOpyCommandResult result, char *buffer)
+{
+    if (!result.ok)
+    {
+        std::cout << "Command failed" << std::endl;
+        return;
+    }
+    if (result.type == READ)
+    {
+        std::stringstream streambuf;a
+        for (size_t i = 0; i < result.data_size ; i++)
+        {
+            if (i % 4 == 0) streambuf << "0x" << std::hex << command.read.address + i << ": ";
+            boost::format fmt("%02x ");
+            auto chunk = ((unsigned int)buffer[i] & 0xff);
+            streambuf << fmt % chunk;
+            if (i % 4 == 3 && i != result.data_size - 1) streambuf << std::endl;
+        }
+        std::cout << streambuf.str() << std::endl;
+    }
+}
+
+inline enum VOpyCommandType type_from_string(const char* type) {
+    if (strcmp(type, "read") == 0) {
+        return READ;
+    } else if (strcmp(type, "write") == 0) {
+        return WRITE;
+    } else if (strcmp(type, "sim_clock") == 0) {
+        return SIM_CLOCK;
+    } else if (strcmp(type, "sim_to_last") == 0) {
+        return SIM_TO_LAST;
+    } else if (strcmp(type, "exit") == 0) {
+        return EXIT;
+    } else {
+        LOG(ERROR) << boost::format("Unknown command type: %1%") % type;
+        return UNKNOWN;
+    }
+}
+
+VOpyCommand VOpyClientApp::read_command_from_stdin()
+{
+    std::cout << " qoco>";
     std::string line;
     std::getline(std::cin, line);
-    if (line == "help")
+    std::istringstream iss(line);
+    std::vector<std::string> args(std::istream_iterator<std::string>{iss},
+                                  std::istream_iterator<std::string>());
+    if (args.empty())
     {
-        help();
         return read_command_from_stdin();
     }
-    std::istringstream iss(line);
-    std::vector<std::string> tokens(std::istream_iterator<std::string>{iss},
-                                    std::istream_iterator<std::string>());
-    // create a command
-    VOpyCommand cmd{.type = UNKNOWN};
-    if (tokens.size() == 0)
+    if (args[0] == "help")
     {
-        return cmd;
+        print_help();
+        return read_command_from_stdin();
     }
-    switch (type_from_string(tokens[0].c_str()))
+    VOpyCommand cmd{.type = type_from_string(args[0].c_str())};
+
+    switch (cmd.type)
     {
     case READ:
     {
-        if (tokens.size() != 2)
+        if (args.size() != 3)
         {
-            help();
-            break;
+            std::cout << "Invalid number of arguments" << std::endl;
+            return read_command_from_stdin();
         }
+        auto address = parse_address(args[1]);
+        auto num_bytes = parse_data(args[2]);
+
         cmd.type = READ;
-        cmd.read.address = parse_address(tokens[1]);
-        break;
-    }
-    case BIG_READ:
-    {
-        if (tokens.size() != 3)
-        {
-            help();
-            break;
-        }
-        cmd.type = BIG_READ;
-        cmd.big_read.address = parse_address(tokens[1]);
-        cmd.big_read.num_of_bytes = std::stoul(tokens[2]);
+        cmd.read.address = address;
+        cmd.read.num_of_bytes = num_bytes;
         break;
     }
     case WRITE:
     {
-        if (tokens.size() != 3)
+        if (args.size() < 3)
         {
-            help();
-            break;
+            std::cout << " ERROR: Invalid number of arguments" << std::endl;
+            return read_command_from_stdin();
         }
-        cmd.type = WRITE;
-        cmd.write.address = parse_address(tokens[1]);
-        cmd.write.data = parse_data(tokens[2]);
-        break;
-    }
-    case BIG_WRITE:
-    {
-        if (tokens.size() != 3)
+        auto address = parse_address(args[1]);
+        auto num_bytes = parse_data(args[2]);
+        std::vector<uint8_t> data;
+        for (size_t i = 3; i < args.size(); i++)
         {
-            help();
-            break;
+            data.push_back(parse_byte(args[i]));
         }
-        cmd.type = BIG_WRITE;
-        cmd.big_write.address = parse_address(tokens[1]);
-        cmd.big_write.num_of_bytes = std::stoul(tokens[2]);
-        auto data_tokens = std::vector<uint32_t>();
-        for (int i = 0; i < tokens.size() - 3; i++)
+        while (data.size() < num_bytes)
         {
-            data_tokens.push_back(parse_data(tokens[3 + i]));
-        }
-        while (data_tokens.size() < cmd.big_write.num_of_bytes * 4)
-        {
+            std::cout << " qoco>" << std::flush;
             std::getline(std::cin, line);
             std::istringstream iss(line);
-            for (int i = 0; i < 4; i++)
+            std::vector<std::string> args(std::istream_iterator<std::string>{iss},
+                                          std::istream_iterator<std::string>());
+            for (size_t i = 0; i < args.size(); i++)
             {
-                std::string token;
-                iss >> token;
-                data_tokens.push_back(parse_data(token));
+                data.push_back(parse_byte(args[i]));
             }
         }
-        cmd.big_write.data = (uint32_t *)malloc(cmd.big_write.num_of_bytes);
-        for (int i = 0; i < cmd.big_write.num_of_bytes; i++)
+
+        cmd.type = WRITE;
+        cmd.write.address = address;
+        cmd.write.num_of_bytes = num_bytes;
+        for (size_t i = 0; i < data.size(); i++)
         {
-            cmd.big_write.data[i] = data_tokens[i];
+            buffer[i] = data[i];
         }
         break;
     }
-    case SIM_CLOCK:
-    {
-        if (tokens.size() != 2)
-        {
-            help();
-            break;
-        }
-        cmd.type = SIM_CLOCK;
-        cmd.sim_clock.cycles = std::stoull(tokens[1]);
-        break;
-    }
-    case SIM_TO_LAST:
-    {
-        if (tokens.size() != 1)
-        {
-            help();
-            break;
-        }
-        cmd.type = SIM_TO_LAST;
-        break;
-    }
-    case EXIT:
-    {
-        if (tokens.size() != 1)
-        {
-            help();
-            break;
-        }
-        cmd.type = EXIT;
-        break;
-    }
+    default:
+        print_help();
+        return read_command_from_stdin();
     }
     return cmd;
 }
 
 int VOpyClientApp::run()
 {
-    int count = 0;
     client->connect();
     while (true)
     {
         auto cmd = read_command_from_stdin();
-        cmd.id = count++;
-        client->send_command(cmd);
-        auto result = client->receive_result();
-        if (!result.ok)
-        {
-            LOG(WARNING) << "!!!NOT OK result!!!";
-        }
-        switch (result.type)
-        {
-        case READ:
-        {
-            std::cout << "Read result: " << result.memory.data << std::endl;
-            break;
-        }
-        case WRITE:
-        {
-            std::cout << "Write result: " << result.memory.data << std::endl;
-            break;
-        }
-        case BIG_READ:
-        {
-            std::cout << "Big read result: " << std::endl;
-            for (int i = 0; i < result.memory.big_read.num_of_bytes; i++)
-            {
-                std::cout << cmd.big_read.address + i << ": " << ((char *)result.memory.big_read.data)[i] << std::endl;
-            }
-            free(result.memory.big_read.data);
-            break;
-        }
-        case BIG_WRITE:
-        {
-            std::cout << "Big write result: " << result.ok << std::endl;
-            free(cmd.big_write.data);
-            break;
-        }
-        case SIM_CLOCK:
-        {
-            std::cout << "Sim clock result: " << result.memory.data << std::endl;
-            break;
-        }
-        case SIM_TO_LAST:
-        {
-            std::cout << "Sim to last result" << std::endl;
-            break;
-        }
-        case EXIT:
-        {
-            std::cout << "Exit result" << std::endl;
-            break;
-        }
-        case UNKNOWN:
-        {
-            std::cout << "Unknown result" << std::endl;
-            break;
-        }
-        }
+        client->send_command(cmd, buffer);
+        auto result = client->receive_result(buffer);
+        process_result(cmd, result, buffer);
     }
     return 0;
 }
-

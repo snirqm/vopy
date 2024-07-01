@@ -2,6 +2,8 @@
 
 #include "cli.h"
 #include "client.h"
+#include <boost/program_options.hpp>
+namespace po = boost::program_options;
 
 
 struct VOpyClientConfig {
@@ -17,6 +19,8 @@ class VOpyClientApp : CLI::App {
 private:
     std::unique_ptr<VOpyClientConfig> config;
     std::unique_ptr<VOpyTcpClient> client;
+
+    VOpyCommand read_command_from_stdin();
 public:
     VOpyClientApp(int argc, char **argv);
     int run();

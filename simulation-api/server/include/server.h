@@ -11,11 +11,6 @@ class TcpSimulationServer  {
     boost::asio::ip::tcp::acceptor acceptor;
     boost::asio::ip::tcp::socket socket;
     std::string sim_path;
-    std::pair<int, int> fds;
-    
-    VOpyCommand receive_command();
-    void send_result(const VOpyCommandResult &res);
-    VOpyCommandResult execute(const VOpyCommand &cmd);
 
     template<typename T>
     T run_or_accept(std::function<T()> f) {
@@ -28,7 +23,11 @@ class TcpSimulationServer  {
             return f();
         }
     }
+    void send_data(const void *data, uint32_t num_of_bytes);
+    void receive_data(void *data, uint32_t num_of_bytes);
 public:
+    VOpyCommand receive_command(char *buffer);
+    void send_result(const VOpyCommandResult &res, char *buffer);
     TcpSimulationServer(int port, const std::string &sim_path);
     void start();
 };

@@ -11,3 +11,5 @@ set(Boost_NO_SYSTEM_PATHS ON)
 set(SVDPI_INCLUDE_DIR /tools/cdnc/xcelium/23.09.004/tools.lnx86/include)
 
 
+set(Protobuf_INCLUDE_DIR /tools/misc/protocomp/2.5.0/usr/include/)
+set(Protobuf_LIBRARY /tools/misc/protocomp/2.5.0/usr/lib64/libprotobuf.so)

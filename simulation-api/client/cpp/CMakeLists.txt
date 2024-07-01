@@ -25,13 +25,14 @@ target_include_directories(simulation-api-client
         PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
+        ${Boost_INCLUDE_DIRS}
 )
 
 #
 # Libraries
 #
 
-
+message(STATUS "Boost_LIBRARIES: ${Boost_LIBRARIES}")
 target_link_libraries(simulation-api-client
         PUBLIC
         commands
@@ -76,5 +77,6 @@ target_link_libraries(simulation-api-client-app
         simulation-api-client
         cli++
         easyloggingpp
+        
         #        vopy-proto
 )

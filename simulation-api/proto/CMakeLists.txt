@@ -1,4 +1,5 @@
-find_package(protobuf CONFIG REQUIRED)
+
+find_package(Protobuf REQUIRED)
 find_package(gRPC CONFIG REQUIRED)
 find_package(Threads)
 
@@ -20,7 +21,7 @@ target_link_libraries(vopy-proto
     PUBLIC
         protobuf::libprotobuf
         gRPC::grpc
-        gRPC::grpc++
+        gRPC::grpc++ 
 )
 target_include_directories(vopy-proto PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 
